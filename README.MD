@@ -1,0 +1,5 @@
+# LLaMA 2
+
+![1786945099940](image/README/1786945099940.png)
+
+## Embeddings
