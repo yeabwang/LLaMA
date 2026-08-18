@@ -4,8 +4,8 @@ from typing import Optional
 import torch
 import torch.nn as nn
 import torch.nn.functional as fun
-from args import ModelArgs
-from rope import apply_rotary_embedding
+from src.args import ModelArgs
+from src.rope import apply_rotary_embedding
 
 
 class SelfAttention(nn.Module):

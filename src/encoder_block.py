@@ -2,10 +2,10 @@ from typing import Optional
 
 import torch
 import torch.nn as nn
-from args import ModelArgs
-from rms_norm import RMSNorm
-from attn import SelfAttention
-from ffn import FeedForwardNetwork
+from src.args import ModelArgs
+from src.rms_norm import RMSNorm
+from src.attn import SelfAttention
+from src.ffn import FeedForwardNetwork
 
 
 class EncoderBlock(nn.Module):

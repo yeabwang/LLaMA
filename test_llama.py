@@ -3,12 +3,12 @@
 import torch
 import torch.nn.functional as fun
 
-from args import ModelArgs
-from model import Transformer
-from attn import SelfAttention
-from ffn import FeedForwardNetwork
-from rms_norm import RMSNorm
-from rope import apply_rotary_embedding, cal_rope_freq
+from src.args import ModelArgs
+from src.model import Transformer
+from src.attn import SelfAttention
+from src.ffn import FeedForwardNetwork
+from src.rms_norm import RMSNorm
+from src.rope import apply_rotary_embedding, cal_rope_freq
 
 
 def args(**kw):

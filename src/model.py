@@ -1,9 +1,9 @@
 import torch
 import torch.nn as nn
-from args import ModelArgs
-from encoder_block import EncoderBlock
-from rms_norm import RMSNorm
-from rope import cal_rope_freq
+from src.args import ModelArgs
+from src.encoder_block import EncoderBlock
+from src.rms_norm import RMSNorm
+from src.rope import cal_rope_freq
 
 
 class Transformer(nn.Module):

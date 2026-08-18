@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as fun
 
-from args import ModelArgs
+from src.args import ModelArgs
 
 
 class FeedForwardNetwork(nn.Module):
