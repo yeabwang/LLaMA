@@ -1,13 +1,11 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as fun
-import math
 from dataclasses import dataclass
 from typing import Optional
 
 from encoder_block import EncoderBlock
 from rms_norm import RMSNorm
-from rope import cal_rope_theta
+from rope import cal_rope_freq
 
 
 @dataclass
@@ -46,14 +44,14 @@ class Transformer(nn.Module):
 
             self.norm = RMSNorm(args.dims, eps=args.norm_eps)
             self.output = nn.Linear(args.dims, self.vocab_size, bias=False)
-            self.rope_theta = cal_rope_theta(
+            self.rope_theta = cal_rope_freq(
                 self.args.dims // self.args.n_heads,
                 self.args.max_seq_len * 2,
-                device=self.args.device,
+                self.args.device,
             )
 
         else:
-            print(f"{args.vocab_size} must be greater than zero")
+            raise ValueError(f"{args.vocab_size} must be greater than zero")
 
     def forward(self, tokens: torch.Tensor, start_pos: int = 0):
         _, seq_len = tokens.shape
