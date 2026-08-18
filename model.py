@@ -1,57 +1,40 @@
 import torch
 import torch.nn as nn
-from dataclasses import dataclass
-from typing import Optional
-
+from args import ModelArgs
 from encoder_block import EncoderBlock
 from rms_norm import RMSNorm
 from rope import cal_rope_freq
 
 
-@dataclass
-class ModelArgs:
-    dims: int = 4096
-    n_layers: int = 32
-    n_heads: int = 32
-    n_kv_heads: Optional[int] = None
-    vocab_size: int = -1
-    # will be used to increase back the size of the parameters which was reduced
-    # as result of the reduced heads as of kv cahce
-    multiple_of: int = 256
-    ffn_dim_multiplier: Optional[float] = None
-    norm_eps: float = 1e-5
-
-    # Needed for KV cache
-    max_batch_size: int = 32
-    max_seq_len: int = 2048
-
-    device: str = "cpu"
-
-
 class Transformer(nn.Module):
-    def __init__(self, args: ModelArgs):
+    def __init__(self, Param: ModelArgs):
         super().__init__()
 
-        if args.vocab_size > 0:
-            self.args = args
-            self.vocab_size = args.vocab_size
-            self.n_layers = args.n_layers
-            self.tok_embeddings: nn.Embedding = nn.Embedding(self.vocab_size, args.dims)
-            self.layers = nn.ModuleList()
+        if Param.vocab_size <= 0:
+            raise ValueError(f"{Param.vocab_size} must be greater than zero")
 
-            for _ in range(args.n_layers):
-                self.layers.append(EncoderBlock(args))
+        self.args = Param
+        self.vocab_size = Param.vocab_size
+        self.n_layers = Param.n_layers
+        self.tok_embeddings: nn.Embedding = nn.Embedding(self.vocab_size, Param.dims)
+        self.layers = nn.ModuleList()
 
-            self.norm = RMSNorm(args.dims, eps=args.norm_eps)
-            self.output = nn.Linear(args.dims, self.vocab_size, bias=False)
-            self.rope_theta = cal_rope_freq(
-                self.args.dims // self.args.n_heads,
-                self.args.max_seq_len * 2,
-                self.args.device,
-            )
+        for _ in range(Param.n_layers):
+            self.layers.append(EncoderBlock(Param))
 
-        else:
-            raise ValueError(f"{args.vocab_size} must be greater than zero")
+        self.norm = RMSNorm(Param.dims, eps=Param.norm_eps)
+        self.output = nn.Linear(Param.dims, self.vocab_size, bias=False)
+
+        # buffer so it follows .to(device)/.cuda() with the rest of the model
+        self.register_buffer(
+            "rope_theta",
+            cal_rope_freq(
+                Param.dims // Param.n_heads,
+                Param.max_seq_len * 2,
+                Param.device,
+            ),
+            persistent=False,
+        )
 
     def forward(self, tokens: torch.Tensor, start_pos: int = 0):
         _, seq_len = tokens.shape
@@ -61,8 +44,25 @@ class Transformer(nn.Module):
         )  # batch_size, seq_len -> batch_size, seq_len, emb_dim
         get_pos = self.rope_theta[start_pos : start_pos + seq_len]
 
+        # causal mask; cached positions [0, start_pos) are always visible
+        mask = None
+        if seq_len > 1:
+            mask = torch.full(
+                (seq_len, seq_len), float("-inf"), device=tokens.device, dtype=h.dtype
+            )
+            mask = torch.triu(mask, diagonal=1)
+            mask = torch.cat(
+                [
+                    torch.zeros(
+                        (seq_len, start_pos), device=tokens.device, dtype=h.dtype
+                    ),
+                    mask,
+                ],
+                dim=-1,
+            )
+
         for layer in self.layers:
-            h = layer(h, start_pos, get_pos)
-        h = self.norm
+            h = layer(h, start_pos, get_pos, mask)
+        h = self.norm(h)
         output = self.output(h).float()
         return output

@@ -1,6 +1,8 @@
+from typing import Optional
+
 import torch
 import torch.nn as nn
-from model import ModelArgs
+from args import ModelArgs
 from rms_norm import RMSNorm
 from attn import SelfAttention
 from ffn import FeedForwardNetwork
@@ -18,8 +20,14 @@ class EncoderBlock(nn.Module):
         self.attn_norm = RMSNorm(Param.dims, Param.norm_eps)
         self.ffn_norm = RMSNorm(Param.dims, Param.norm_eps)
 
-    def forward(self, x: torch.Tensor, start_pos: int, freq_complex: torch.Tensor):
-        h = x + self.attention(self.attn_norm(x), start_pos, freq_complex)
+    def forward(
+        self,
+        x: torch.Tensor,
+        start_pos: int,
+        freq_complex: torch.Tensor,
+        mask: Optional[torch.Tensor] = None,
+    ):
+        h = x + self.attention(self.attn_norm(x), start_pos, freq_complex, mask)
 
         out = h + self.ffn(self.ffn_norm(h))
 

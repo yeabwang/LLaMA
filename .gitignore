@@ -1,0 +1,4 @@
+__pycache__
+.llama
+.mypy_cache
+llama_scratch
