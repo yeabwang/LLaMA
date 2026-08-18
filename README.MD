@@ -1,10 +1,10 @@
 # LLaMA 2
 
-![1786945099940](image/README/1786945099940.png)
+![1786945099940](llama_arc.png)
 
 ## ROPE
 
-![1787023316542](image/README/1787023316542.png)
+![1787023316542](rope.png)
 
 ## Grouped Query Attention
 
