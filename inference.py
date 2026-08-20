@@ -55,10 +55,9 @@ class LLaMA:
         tokenizer.load(tokenizer_path)
         model_args.vocab_size = tokenizer.vocab_size()
 
-        if device == "cuda":
-            torch.set_default_tensor_type(torch.cuda.HalfTensor)
-        else:
-            torch.set_default_tensor_type(torch.BFloat16Tensor)
+        default_dtype = torch.float16 if device == "cuda" else torch.bfloat16
+        torch.set_default_dtype(default_dtype)
+        torch.set_default_device(device)
 
         model = Transformer(model_args).to(device)
 
@@ -80,8 +79,8 @@ if __name__ == "__main__":
     device = "cuda" if torch.cuda.is_available() and allow_cuda else "cpu"
 
     model = LLaMA.build(
-        checkpoints_dir="llama-2-7b/",
-        tokenizer_path="tokenizer.model",
+        checkpoints_dir="models/llama-2-7b",
+        tokenizer_path="models/llama-2-7b/tokenizer.model",
         load_model=True,
         max_seq_len=1024,
         max_batch_size=3,
