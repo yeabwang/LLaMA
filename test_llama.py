@@ -120,6 +120,23 @@ def test_transformer_forward():
         assert model(tokens[:, :1], 0).shape == (2, 1, 17)
 
 
+def test_transformer_uses_checkpoint_parameter_names():
+    state = Transformer(args()).state_dict()
+    expected = {
+        "layers.0.attention.wq.weight",
+        "layers.0.attention.wk.weight",
+        "layers.0.attention.wv.weight",
+        "layers.0.attention.wo.weight",
+        "layers.0.feed_forward.w1.weight",
+        "layers.0.feed_forward.w2.weight",
+        "layers.0.feed_forward.w3.weight",
+        "layers.0.attention_norm.weight",
+        "layers.0.ffn_norm.weight",
+    }
+    assert expected.issubset(state)
+    assert "rope.freqs" not in state
+
+
 if __name__ == "__main__":
     for name, fn in sorted(globals().items()):
         if name.startswith("test_"):

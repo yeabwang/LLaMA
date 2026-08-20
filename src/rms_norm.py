@@ -4,9 +4,9 @@ import torch.nn as nn
 
 class RMSNorm(nn.Module):
     # implmenting (xi / rmsn(xi)) * gamma where rmsn(xi) = sqrt(mean(xi**2))
-    def __init__(self, dim, eps: float = 1e-6):
+    def __init__(self, dims, eps: float = 1e-6):
         super().__init__()
-        self.weight = nn.Parameter(torch.ones(dim))  # gamma
+        self.weight = nn.Parameter(torch.ones(dims))  # gamma
         self.eps = eps
 
     def forward(self, x: torch.Tensor):

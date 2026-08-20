@@ -29,11 +29,14 @@ class SelfAttention(nn.Module):
 
         self.wq = nn.Linear(Param.dims, Param.n_heads * self.head_dim, bias=False)
 
-        self.wkv = nn.Linear(
-            Param.dims, self.n_kv_heads * self.head_dim * 2, bias=False
-        )
 
-        self.out = nn.Linear(Param.n_heads * self.head_dim, Param.dims, bias=False)
+        self.wk = nn.Linear(
+            Param.dims, self.n_kv_heads * self.head_dim, bias=False
+        )
+        self.wv = nn.Linear(
+            Param.dims, self.n_kv_heads * self.head_dim, bias=False
+        )
+        self.wo = nn.Linear(Param.n_heads * self.head_dim, Param.dims, bias=False)
 
         self.register_buffer(
             "k_cache",
@@ -71,15 +74,13 @@ class SelfAttention(nn.Module):
 
         batch_size, seq_len, _ = x.shape
 
-        xkv = self.wkv(x)
         xq = self.wq(x)
-
-        xkv = xkv.view(batch_size, seq_len, 2, self.n_kv_heads, self.head_dim)
+        xk = self.wk(x)
+        xv = self.wv(x)
 
         xq = xq.view(batch_size, seq_len, self.n_q_heads, self.head_dim)
-
-        # split key and value heads
-        xk, xv = xkv.unbind(dim=2)
+        xk = xk.view(batch_size, seq_len, self.n_kv_heads, self.head_dim)
+        xv = xv.view(batch_size, seq_len, self.n_kv_heads, self.head_dim)
 
         xq_rotated = apply_rotary_embedding(xq, freq_complex)
 
@@ -135,4 +136,4 @@ class SelfAttention(nn.Module):
 
         out = out.view(batch_size, seq_len, -1)
 
-        return self.out(out)
+        return self.wo(out)

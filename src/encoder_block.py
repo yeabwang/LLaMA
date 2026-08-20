@@ -15,9 +15,9 @@ class EncoderBlock(nn.Module):
         # self.dims = Param.dims
         # self.head_dims = Param.dims // Param.n_heads
         self.attention = SelfAttention(Param)
-        self.ffn = FeedForwardNetwork(Param)
+        self.feed_forward = FeedForwardNetwork(Param)
 
-        self.attn_norm = RMSNorm(Param.dims, Param.norm_eps)
+        self.attention_norm = RMSNorm(Param.dims, Param.norm_eps)
         self.ffn_norm = RMSNorm(Param.dims, Param.norm_eps)
 
     def forward(
@@ -27,8 +27,8 @@ class EncoderBlock(nn.Module):
         freq_complex: torch.Tensor,
         mask: Optional[torch.Tensor] = None,
     ):
-        h = x + self.attention(self.attn_norm(x), start_pos, freq_complex, mask)
+        h = x + self.attention(self.attention_norm(x), start_pos, freq_complex, mask)
 
-        out = h + self.ffn(self.ffn_norm(h))
+        out = h + self.feed_forward(self.ffn_norm(h))
 
         return out
