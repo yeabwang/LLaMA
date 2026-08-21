@@ -29,13 +29,8 @@ class SelfAttention(nn.Module):
 
         self.wq = nn.Linear(Param.dims, Param.n_heads * self.head_dim, bias=False)
 
-
-        self.wk = nn.Linear(
-            Param.dims, self.n_kv_heads * self.head_dim, bias=False
-        )
-        self.wv = nn.Linear(
-            Param.dims, self.n_kv_heads * self.head_dim, bias=False
-        )
+        self.wk = nn.Linear(Param.dims, self.n_kv_heads * self.head_dim, bias=False)
+        self.wv = nn.Linear(Param.dims, self.n_kv_heads * self.head_dim, bias=False)
         self.wo = nn.Linear(Param.n_heads * self.head_dim, Param.dims, bias=False)
 
         self.register_buffer(
