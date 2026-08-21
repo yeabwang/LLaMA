@@ -1,4 +1,5 @@
 from typing import Optional
+import argparse
 import torch
 import time
 from pathlib import Path
@@ -88,13 +89,13 @@ class LLaMA:
         ]
         # Make sure the batch size is not too large
         batch_size = len(prompt_tokens)
-        if batch_size <= self.args.max_batch_size:
+        if batch_size > self.args.max_batch_size:
             raise ValueError(
                 f"batch size must be less than or equal to {self.args.max_batch_size}"
             )
         max_prompt_len = max(len(prompt) for prompt in prompt_tokens)
         # Make sure the prompt length is not larger than the maximum sequence length
-        if max_prompt_len <= self.args.max_seq_len:
+        if max_prompt_len > self.args.max_seq_len:
             raise ValueError(
                 f"prompt length must be less than or equal to {self.args.max_seq_len}"
             )
@@ -103,13 +104,15 @@ class LLaMA:
         # Create the list that will contain the generated tokens, along with the initial prompt tokens
         pad_id = self.tokenizer.pad_id()
         tokens = torch.full(
-            (batch_size, total_len), pad_id, dtype=torch.long, device=device
+            (batch_size, total_len), pad_id, dtype=torch.long, device=self.args.device
         )
         for k, t in enumerate(prompt_tokens):
             # Populate the initial tokens with the prompt tokens
-            tokens[k, : len(t)] = torch.tensor(t, dtype=torch.long, device=device)
+            tokens[k, : len(t)] = torch.tensor(
+                t, dtype=torch.long, device=self.args.device
+            )
 
-        eos_reached = torch.tensor([False] * batch_size, device=device)
+        eos_reached = torch.tensor([False] * batch_size, device=self.args.device)
         prompt_tokens_mask = (
             tokens != pad_id
         )  # True if the token is a prompt token, False otherwise
@@ -166,22 +169,38 @@ class LLaMA:
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="LLaMA text completion")
+    parser.add_argument("--prompt", required=True, help="prompt text")
+    parser.add_argument("--max-gen-len", type=int, default=64)
+    parser.add_argument("--temperature", type=float, default=0.6)
+    parser.add_argument("--top-p", type=float, default=0.9)
+    parser.add_argument("--max-seq-len", type=int, default=1024)
+    parser.add_argument("--allow-cuda", action="store_true")
+    parser.add_argument("--checkpoints-dir", default="models/llama-2-7b")
+    parser.add_argument("--tokenizer-path", default="models/llama-2-7b/tokenizer.model")
+    args = parser.parse_args()
+
     torch.manual_seed(0)
+    device = "cuda" if torch.cuda.is_available() and args.allow_cuda else "cpu"
 
-    allow_cuda = False
-    device = "cuda" if torch.cuda.is_available() and allow_cuda else "cpu"
-
-    prompts = [
-        "Hello whats your name",
-    ]
+    prompts = [args.prompt]
 
     model = LLaMA.build(
-        checkpoints_dir="models/llama-2-7b",
-        tokenizer_path="models/llama-2-7b/tokenizer.model",
+        checkpoints_dir=args.checkpoints_dir,
+        tokenizer_path=args.tokenizer_path,
         load_model=True,
-        max_seq_len=1024,
+        max_seq_len=args.max_seq_len,
         max_batch_size=len(prompts),
         device=device,
     )
 
-    print("All OK")
+    out_tokens, out_texts = model.text_completion(
+        prompts,
+        temperature=args.temperature,
+        top_p=args.top_p,
+        max_gen_len=args.max_gen_len,
+    )
+    assert len(out_texts) == len(prompts)
+    for text in out_texts:
+        print(text)
+        print("-" * 50)
